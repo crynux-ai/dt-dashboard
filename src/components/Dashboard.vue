@@ -73,9 +73,23 @@ const loadTaskLogs = async () => {
     taskLogs.value = resp.logs;
 };
 
+const metaSpan = ref(2);
+const adjustMetaSpan = () => {
+    const width = document.getElementById("meta-col").clientWidth;
+    if(width <= 660) {
+        metaSpan.value = 4;
+    } else {
+        metaSpan.value = 2;
+    }
+};
+
 onMounted(async () => {
-    window.addEventListener('resize', adjustProgressSteps);
+    window.addEventListener('resize', () => {
+        adjustProgressSteps();
+        adjustMetaSpan();
+    });
     adjustProgressSteps();
+    adjustMetaSpan();
     await loadTaskInfo();
     await loadNodeList();
     await loadTaskLogs();
@@ -88,17 +102,17 @@ onMounted(async () => {
     <layout-header :style="{'background-color': '#2B303B'}">
         <img src="./logo-white.png" alt="Crynux logo" width="40" />&nbsp;&nbsp;&nbsp;&nbsp;Decentralized Training Dashboard
     </layout-header>
-    <layout-content style="height:100%">
-        <row style="height: 50%">
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background': '#29332B', 'padding': '32px', 'height': '100%'}">
+    <layout-content class="layout-content">
+        <row class="layout-row">
+            <a-col id="meta-col" class="data-area" :xs="24" :sm="24" :md="24" :lg="12" :style="{'background': '#29332B'}">
                 <space direction="vertical" size="large" style="width: 100%">
                     <typography-title :level="5">
                         <play-circle-outlined /> Training Task
                     </typography-title>
                     <descriptions bordered size="small" :column="4">
                         <descriptions-item label="Task Type" :span="4">Decentralized Pretraining</descriptions-item>
-                        <descriptions-item label="Model Type" :span="2">MusicGen</descriptions-item>
-                        <descriptions-item label="Training Type" :span="2">Federated Learning</descriptions-item>
+                        <descriptions-item label="Model Type" :span="metaSpan">MusicGen</descriptions-item>
+                        <descriptions-item label="Training Type" :span="metaSpan">Federated Learning</descriptions-item>
                         <descriptions-item label="Latest Artifact" :span="4">
                             <a href="https://huggingface.co/crynux-ai/fl-music-gen" target="_blank">https://huggingface.co/crynux-ai/fl-music-gen</a>
                         </descriptions-item>
@@ -117,17 +131,17 @@ onMounted(async () => {
                     </space>
                 </space>
             </a-col>
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#332B2B', 'padding': '32px', 'height': '100%'}">
+            <a-col class="data-area" :xs="24" :sm="24" :md="24" :lg="12" :style="{'background-color': '#332B2B'}">
                 <typography-title :level="5">
                     <area-chart-outlined /> Model Metrics
                 </typography-title>
-                <div class="chart-wrapper" style="position: absolute; top: 70px; bottom: 32px; left: 32px; right: 32px">
+                <div class="chart-wrapper" id="chart-wrapper">
                     <loss-chart/>
                 </div>
             </a-col>
         </row>
-        <row style="height: 50%">
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#302B33', 'padding': '32px', 'height': '100%'}">
+        <row class="layout-row">
+            <a-col class="data-area" :xs="24" :sm="24" :md="24" :lg="12" :style="{'background-color': '#302B33'}">
                 <space direction="vertical" size="large" style="width: 100%">
                     <typography-title :level="5"><apartment-outlined /> Participated Nodes</typography-title>
                     <a-table :dataSource="nodeList" :columns="nodeListColumns" size="small" >
@@ -147,7 +161,7 @@ onMounted(async () => {
                     </a-table>
                 </space>
             </a-col>
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#312A24', 'padding': '32px', 'height': '100%'}">
+            <a-col class="data-area" :xs="24" :sm="24" :md="24" :lg="12" :style="{'background-color': '#312A24'}">
                 <typography-title :level="5"><code-outlined /> Training Logs</typography-title>
                 <div class="logs">
                     <div v-for="log in taskLogs" style="line-height: 24px">
@@ -173,5 +187,34 @@ onMounted(async () => {
     bottom: 32px;
     top: 64px;
     overflow: auto;
+}
+.layout-content {
+    height: 100%;
+}
+.layout-row {
+    height: 50%;
+}
+.data-area {
+    padding: 32px;
+    height: 100%;
+}
+#chart-wrapper {
+    position: absolute;
+    top: 70px;
+    bottom: 32px;
+    left: 32px;
+    right: 32px
+}
+@media (max-width: 991px) {
+    .layout-content {
+        height: auto;
+    }
+    .layout-row {
+        height: auto;
+    }
+    .data-area {
+        height: auto;
+        min-height: 300px;
+    }
 }
 </style>

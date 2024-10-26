@@ -21,7 +21,7 @@
 <script setup>
 import { Line } from 'vue-chartjs';
 import { LoadingOutlined } from "@ant-design/icons-vue";
-import {onMounted, reactive, ref, watch} from "vue";
+import {onMounted, ref} from "vue";
 import taskAPI from "@/api/v1/task";
 
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement } from 'chart.js'
@@ -33,7 +33,7 @@ const data = ref({
     labels: [],
     datasets: [
     {
-      label: 'Task Count',
+      label: 'Loss',
       backgroundColor: 'rgba(54, 162, 235, 0.5)',
       data: []
     }
