@@ -22,6 +22,8 @@ import {
 import LossChart from "@/components/LossChart.vue";
 
 import moment from 'moment';
+import {computed, onMounted, ref} from "vue";
+import taskAPI from "@/api/v1/task.js";
 
 const ACol = Col;
 const AProgress = Progress;
@@ -48,78 +50,36 @@ const nodeListColumns = [
     },
 ];
 
-const nodeListData = [
-    {
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        last_commit: 1729667463,
-        contribution: 0.4
-    },
-    {
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        last_commit: 1729667463,
-        contribution: 0.4
-    },
-    {
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        last_commit: 1729667463,
-        contribution: 0.4
-    },
-    {
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        last_commit: 1729667463,
-        contribution: 0.4
-    },
-    {
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        last_commit: 1729667463,
-        contribution: 0.4
-    }
-];
+const progressSteps = ref(100);
+const adjustProgressSteps = () => {
+    const width = document.getElementById('progress-wrapper').clientWidth;
+        progressSteps.value = Math.ceil(width / 5);
+};
 
-const logs = [
-    {
-        type: 'submit',
-        time: 1729667463,
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        tx_hash: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        iteration: 5
-    },
-    {
-        type: 'submit',
-        time: 1729667463,
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        tx_hash: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        iteration: 5
-    },
-    {
-        type: 'aggregation',
-        time: 1729667463,
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        tx_hash: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        iteration: 5
-    },
-    {
-        type: 'submit',
-        time: 1729667463,
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        tx_hash: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        iteration: 4
-    },
-    {
-        type: 'submit',
-        time: 1729667463,
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        tx_hash: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        iteration: 4
-    },
-    {
-        type: 'aggregation',
-        time: 1729667463,
-        address: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        tx_hash: '0xEDa8747bfe3396Aa37c937faF5BB97952cEf3bf2',
-        iteration: 4
-    }
-];
+const taskInfo = ref({});
+const loadTaskInfo = async () => {
+    taskInfo.value = await taskAPI.getTaskInfo();
+};
+
+const nodeList = ref([]);
+const loadNodeList = async () => {
+    const resp = await taskAPI.getTaskNodes();
+    nodeList.value = resp.nodes;
+};
+
+const taskLogs = ref([]);
+const loadTaskLogs = async () => {
+    const resp = await taskAPI.getTaskLogs();
+    taskLogs.value = resp.logs;
+};
+
+onMounted(async () => {
+    window.addEventListener('resize', adjustProgressSteps);
+    adjustProgressSteps();
+    await loadTaskInfo();
+    await loadNodeList();
+    await loadTaskLogs();
+})
 
 </script>
 
@@ -130,7 +90,7 @@ const logs = [
     </layout-header>
     <layout-content style="height:100%">
         <row style="height: 50%">
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background': '#29332B', 'padding': '32px'}">
+            <a-col :xs="24" :sm="24" :md="12" :style="{'background': '#29332B', 'padding': '32px', 'height': '100%'}">
                 <space direction="vertical" size="large" style="width: 100%">
                     <typography-title :level="5">
                         <play-circle-outlined /> Training Task
@@ -142,35 +102,35 @@ const logs = [
                         <descriptions-item label="Latest Artifact" :span="4">
                             <a href="https://huggingface.co/crynux-ai/fl-music-gen" target="_blank">https://huggingface.co/crynux-ai/fl-music-gen</a>
                         </descriptions-item>
-                        <descriptions-item label="Latest Partial" :span="4">2024-10-24 13:17</descriptions-item>
-                        <descriptions-item label="Latest Aggregation" :span="4">2024-10-24 13:17</descriptions-item>
+                        <descriptions-item label="Used dataset samples" :span="4">{{ taskInfo.num_samples }}</descriptions-item>
+                        <descriptions-item label="Latest Partial" :span="4">{{ moment.unix(taskInfo.latest_partial_time).format('YYYY-MM-DD HH:mm:ss') }}</descriptions-item>
+                        <descriptions-item label="Latest Aggregation" :span="4">{{ moment.unix(taskInfo.latest_aggregation_time).format('YYYY-MM-DD HH:mm:ss') }}</descriptions-item>
                     </descriptions>
-                    <space direction="vertical" size="small" style="width: 100%">
-                        <typography-title :level="5"><schedule-outlined /> Training Progress (74/100)</typography-title>
+                    <space direction="vertical" size="small" style="width: 100%" id="progress-wrapper">
+                        <typography-title :level="5"><schedule-outlined /> Training Progress ({{ taskInfo.current_round }}/{{ taskInfo.max_round }})</typography-title>
                         <a-progress
-                            :steps="120"
+                            :steps="progressSteps"
                             size="small"
                             :stroke-color="'#108ee9'"
-                            :percent="70"
+                            :percent="taskInfo.current_round * 100 / taskInfo.max_round"
                         />
                     </space>
                 </space>
-
             </a-col>
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#332B2B', 'padding': '32px'}">
-                <space direction="vertical" size="large" style="width: 100%">
-                    <typography-title :level="5">
-                        <area-chart-outlined /> Model Metrics
-                    </typography-title>
-                    <loss-chart />
-                </space>
+            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#332B2B', 'padding': '32px', 'height': '100%'}">
+                <typography-title :level="5">
+                    <area-chart-outlined /> Model Metrics
+                </typography-title>
+                <div class="chart-wrapper" style="position: absolute; top: 70px; bottom: 32px; left: 32px; right: 32px">
+                    <loss-chart/>
+                </div>
             </a-col>
         </row>
         <row style="height: 50%">
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#302B33', 'padding': '32px'}">
+            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#302B33', 'padding': '32px', 'height': '100%'}">
                 <space direction="vertical" size="large" style="width: 100%">
                     <typography-title :level="5"><apartment-outlined /> Participated Nodes</typography-title>
-                    <a-table :dataSource="nodeListData" :columns="nodeListColumns" size="small" >
+                    <a-table :dataSource="nodeList" :columns="nodeListColumns" size="small" >
                         <template #bodyCell="{ column, record }">
                             <template v-if="column.key === 'address'">
                                 <typography-link :href="'https://bb.dym.fyi/r/dev-crynux/address/' + record.address" target="_blank">
@@ -181,26 +141,24 @@ const logs = [
                                 {{ moment.unix(record.last_commit).format('YYYY-MM-DD HH:mm') }}
                             </template>
                             <template v-if="column.key === 'contribution'">
-                                {{ record.contribution * 100 }}%
+                                {{ (record.contribution * 100).toFixed(2) }}%
                             </template>
                         </template>
                     </a-table>
                 </space>
             </a-col>
-            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#312A24', 'padding': '32px'}">
-                <space direction="vertical" size="large" style="width: 100%">
-                    <typography-title :level="5"><code-outlined /> Training Logs</typography-title>
-                    <div class="logs">
-                        <div v-for="log in logs" style="line-height: 24px">
-                            [ {{ moment.unix(log.time).format('YYYY-MM-DD HH:mm') }} ]
-                            &nbsp;[ Iter {{ log.iteration }} ]
-                            &nbsp;[ Addr <typography-link :href="'https://bb.dym.fyi/r/dev-crynux/address/' + log.address" target="_blank">{{ log.address.substr(0, 6) + '...' + log.address.substr(log.address.length - 6) }}</typography-link> ]
-                            &nbsp;[ Tx <typography-link :href="'https://bb.dym.fyi/r/dev-crynux/transaction/' + log.tx_hash" target="_blank">{{ log.tx_hash.substr(0, 6) + '...' + log.tx_hash.substr(log.tx_hash.length - 6) }}</typography-link> ]
-                            <span v-if="log.type === 'submit'">Submitted partial gradients</span>
-                            <span v-if="log.type === 'aggregation'">Partial gradients aggregated</span>
-                        </div>
+            <a-col :xs="24" :sm="24" :md="12" :style="{'background-color': '#312A24', 'padding': '32px', 'height': '100%'}">
+                <typography-title :level="5"><code-outlined /> Training Logs</typography-title>
+                <div class="logs">
+                    <div v-for="log in taskLogs" style="line-height: 24px">
+                        [ {{ moment.unix(log.time).format('YYYY-MM-DD HH:mm') }} ]
+                        &nbsp;[ Iter {{ log.iteration }} ]
+                        &nbsp;[ Addr <typography-link :href="'https://bb.dym.fyi/r/dev-crynux/address/' + log.address" target="_blank">{{ log.address.substr(0, 6) + '...' + log.address.substr(log.address.length - 6) }}</typography-link> ]
+                        &nbsp;[ Tx <typography-link :href="'https://bb.dym.fyi/r/dev-crynux/tx/' + log.tx_hash" target="_blank">{{ log.tx_hash.substr(0, 6) + '...' + log.tx_hash.substr(log.tx_hash.length - 6) }}</typography-link> ]
+                        <span v-if="log.type === 'submit'">Submitted partial gradients</span>
+                        <span v-if="log.type === 'aggregation'">Partial gradients aggregated</span>
                     </div>
-                </space>
+                </div>
             </a-col>
         </row>
     </layout-content>
@@ -208,5 +166,12 @@ const logs = [
 </template>
 
 <style scoped>
-
+.logs {
+    position: absolute;
+    left: 32px;
+    right: 0;
+    bottom: 32px;
+    top: 64px;
+    overflow: auto;
+}
 </style>
