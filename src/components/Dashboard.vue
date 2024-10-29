@@ -22,7 +22,7 @@ import {
 import LossChart from "@/components/LossChart.vue";
 
 import moment from 'moment';
-import {computed, onMounted, ref} from "vue";
+import {onMounted, ref} from "vue";
 import taskAPI from "@/api/v1/task.js";
 
 const ACol = Col;
@@ -73,23 +73,11 @@ const loadTaskLogs = async () => {
     taskLogs.value = resp.logs;
 };
 
-const metaSpan = ref(2);
-const adjustMetaSpan = () => {
-    const width = document.getElementById("meta-col").clientWidth;
-    if(width <= 660) {
-        metaSpan.value = 4;
-    } else {
-        metaSpan.value = 2;
-    }
-};
-
 onMounted(async () => {
     window.addEventListener('resize', () => {
         adjustProgressSteps();
-        adjustMetaSpan();
     });
     adjustProgressSteps();
-    adjustMetaSpan();
     await loadTaskInfo();
     await loadNodeList();
     await loadTaskLogs();
@@ -110,11 +98,10 @@ onMounted(async () => {
                         <play-circle-outlined /> Training Task
                     </typography-title>
                     <descriptions bordered size="small" :column="4">
-                        <descriptions-item label="Task Type" :span="4">Decentralized Pretraining</descriptions-item>
-                        <descriptions-item label="Model Type" :span="metaSpan">MusicGen</descriptions-item>
-                        <descriptions-item label="Training Type" :span="metaSpan">Federated Learning</descriptions-item>
+                        <descriptions-item label="Task Type" :span="4">{{ taskInfo.task_type }}</descriptions-item>
+                        <descriptions-item label="Model Type" :span="4">{{ taskInfo.model_type }}</descriptions-item>
                         <descriptions-item label="Latest Artifact" :span="4">
-                            <a href="https://huggingface.co/crynux-ai/fl-music-gen" target="_blank">https://huggingface.co/crynux-ai/fl-music-gen</a>
+                            <a :href="taskInfo.model_url" target="_blank">{{ taskInfo.model_url }}</a>
                         </descriptions-item>
                         <descriptions-item label="Used dataset samples" :span="4">{{ taskInfo.num_samples }}</descriptions-item>
                         <descriptions-item label="Latest Partial" :span="4">{{ moment.unix(taskInfo.latest_partial_time).format('YYYY-MM-DD HH:mm:ss') }}</descriptions-item>
