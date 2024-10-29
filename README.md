@@ -1,3 +1,3 @@
-# FL Dashboard
+# DT Dashboard
 
 Dashboard to visualize the decentralized training task running in the network.
